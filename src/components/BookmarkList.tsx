@@ -1,7 +1,7 @@
 'use client'
 
 import { createClient } from '@/utils/supabase/client'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Database } from '@/types/supabase'
 
 type Bookmark = Database['public']['Tables']['bookmarks']['Row']
@@ -9,7 +9,7 @@ type Bookmark = Database['public']['Tables']['bookmarks']['Row']
 export default function BookmarkList() {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([])
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
     const fetchBookmarks = async () => {
@@ -53,7 +53,14 @@ export default function BookmarkList() {
       )
       .subscribe()
 
+    const handleBookmarksRefresh = () => {
+      fetchBookmarks()
+    }
+
+    window.addEventListener('bookmarks:refresh', handleBookmarksRefresh)
+
     return () => {
+      window.removeEventListener('bookmarks:refresh', handleBookmarksRefresh)
       supabase.removeChannel(channel)
     }
   }, [supabase])
@@ -71,38 +78,63 @@ export default function BookmarkList() {
   }
 
   if (loading) {
-    return <div className="text-center py-8 text-gray-500">Loading bookmarks...</div>
+    return (
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, idx) => (
+          <div
+            key={idx}
+            className="h-36 animate-pulse rounded-2xl border border-[rgba(23,32,45,0.08)] bg-white/70"
+          />
+        ))}
+      </div>
+    )
   }
 
   if (bookmarks.length === 0) {
     return (
-      <div className="text-center py-12 text-gray-500 bg-white rounded-lg shadow-sm border border-gray-200">
-        <p className="text-lg mb-2">No bookmarks yet</p>
-        <p className="text-sm">Add your first bookmark using the form above!</p>
+      <div className="rounded-2xl border border-dashed border-[rgba(23,32,45,0.2)] bg-[rgba(255,255,255,0.5)] px-4 py-10 text-center sm:px-6 sm:py-12">
+        <p className="text-lg font-semibold text-[#17202d]">No bookmarks yet</p>
+        <p className="mt-1 text-sm text-[#556274]">Use the form above to add your first saved link.</p>
       </div>
     )
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {bookmarks.map((bookmark) => (
-        <div key={bookmark.id} className="bg-white p-5 rounded-lg shadow-md border border-gray-100 flex flex-col justify-between hover:shadow-lg transition-shadow">
-          <div className="mb-4">
-            <h3 className="font-semibold text-lg text-gray-800 mb-2 truncate" title={bookmark.title}>{bookmark.title}</h3>
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      {bookmarks.map((bookmark, index) => (
+        <div
+          key={bookmark.id}
+          className="fade-slide flex min-h-44 flex-col justify-between rounded-2xl border border-[rgba(23,32,45,0.12)] bg-[rgba(255,255,255,0.9)] p-4 shadow-[0_10px_30px_rgba(48,56,67,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(48,56,67,0.14)] sm:p-5"
+          style={{ animationDelay: `${index * 40}ms` }}
+        >
+          <div className="mb-4 space-y-2">
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.09em] text-[#11728c]">Bookmark</p>
+            <h3 className="truncate text-lg font-semibold text-[#17202d]" title={bookmark.title}>
+              {bookmark.title}
+            </h3>
             <a
               href={bookmark.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-600 hover:underline text-sm break-all line-clamp-2"
+              className="clamp-2 break-all text-sm text-[#1f5d80] hover:underline"
               title={bookmark.url}
             >
               {bookmark.url}
             </a>
           </div>
-          <div className="flex justify-end pt-2 border-t border-gray-50">
+
+          <div className="mt-auto flex items-center justify-between gap-3 border-t border-[rgba(23,32,45,0.08)] pt-3">
+            <a
+              href={bookmark.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="primary-btn rounded-lg border border-[rgba(17,114,140,0.2)] bg-[rgba(17,114,140,0.08)] px-3 py-1.5 text-xs font-semibold text-[#0f5f76] hover:bg-[rgba(17,114,140,0.16)]"
+            >
+              Visit
+            </a>
             <button
               onClick={() => handleDelete(bookmark.id)}
-              className="text-red-500 hover:text-red-700 text-sm font-medium px-2 py-1 rounded hover:bg-red-50 transition"
+              className="primary-btn rounded-lg border border-[rgba(185,71,39,0.2)] bg-[rgba(217,93,57,0.08)] px-3 py-1.5 text-xs font-semibold text-[#b94727] hover:bg-[rgba(217,93,57,0.16)]"
             >
               Delete
             </button>

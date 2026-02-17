@@ -24,14 +24,21 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen py-2 bg-gray-50">
-      <div className="p-8 bg-white rounded shadow-md w-full max-w-md text-center">
-        <h1 className="text-3xl font-bold mb-6 text-gray-800">Smart Bookmark App</h1>
-        <p className="mb-6 text-gray-600">Sign in to manage your bookmarks</p>
+    <div className="app-shell flex min-h-screen items-center justify-center px-4 py-8 sm:px-6">
+      <div className="ambient-orb orb-one" />
+      <div className="ambient-orb orb-two" />
+      <div className="ambient-orb orb-three" />
+
+      <div className="glass-panel fade-slide relative z-10 w-full max-w-md p-6 text-center sm:p-8">
+        <span className="pill">Welcome Back</span>
+        <h1 className="hero-title gradient-heading mt-4 text-3xl font-bold sm:text-4xl">Smart Bookmark App</h1>
+        <p className="mx-auto mt-3 max-w-xs text-sm leading-relaxed text-[#556274] sm:text-base">
+          Sign in with Google to organize and access your bookmarks from anywhere.
+        </p>
         <button
           onClick={handleLogin}
           disabled={loading}
-          className="w-full px-4 py-3 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
+          className="primary-btn mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-[#17202d] px-4 py-3 text-white hover:bg-[#101722] disabled:opacity-60"
         >
           {loading ? 'Redirecting...' : 'Sign in with Google'}
         </button>
