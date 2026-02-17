@@ -1,36 +1,90 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Smart Bookmark App
 
-## Getting Started
+A simple bookmark manager built with Next.js (App Router), Supabase, and Tailwind CSS.
 
-First, run the development server:
+## Features
+
+- **Google Authentication**: Sign up and log in using Google (Supabase Auth).
+- **Private Bookmarks**: Bookmarks are private to each user.
+- **Real-time Updates**: The bookmark list updates instantly across tabs/devices (Supabase Realtime).
+- **CRUD Operations**: Add and delete bookmarks.
+
+## Tech Stack
+
+- **Framework**: Next.js 15 (App Router)
+- **Language**: TypeScript
+- **Backend/Database**: Supabase (PostgreSQL, Auth, Realtime)
+- **Styling**: Tailwind CSS
+
+## Setup Instructions
+
+### 1. Prerequisites
+
+- Node.js installed.
+- A Supabase account.
+
+### 2. Installation
+
+1. Clone the repository (or navigate to the project directory).
+2. Install dependencies:
+
+    ```bash
+    npm install
+    ```
+
+### 3. Supabase Configuration
+
+1. **Create a Project**: Go to [database.new](https://database.new) and create a new project.
+2. **Database Setup**:
+    - Go to the **SQL Editor** in your Supabase dashboard.
+    - Copy the contents of `supabase_schema.sql` (included in this repo) and run it. This creates the `bookmarks` table, enables RLS, and sets up Realtime.
+3. **Authentication**:
+    - Go to **Authentication** -> **Providers**.
+    - Enable **Google**.
+    - You will need to set up a Google Cloud Project to get the Client ID and Secret. (Follow Supabase docs for detailed steps).
+    - **Important**: Add your Vercel deployment URL (and `http://localhost:3000` for development) to the **Redirect URLs** in Supabase Auth settings.
+4. **Environment Variables**:
+    - Rename `example.env.local` to `.env.local`.
+    - Fill in your `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY` from Supabase Project Settings -> API.
+
+### 4. Running Locally
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) with your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deployment
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+This project is ready to be deployed on Vercel.
 
-## Learn More
+1. Push the code to a GitHub repository.
+2. Import the project in Vercel.
+3. Add the Environment Variables (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY`) in the Vercel project settings.
+4. Deploy.
 
-To learn more about Next.js, take a look at the following resources:
+## Problems Encountered & Solutions
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 1. Supabase SSR in App Router
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Problem**: Next.js App Router differentiates between Server Components (RSC) and Client Components. Managing the Supabase session and cookies consistently across both was challenging.
+**Solution**: Used `@supabase/ssr` package. Implemented two client creators:
 
-## Deploy on Vercel
+- `createClient` in `utils/supabase/server.ts` for Server Components/Actions (accessing cookies directly).
+- `createClient` in `utils/supabase/client.ts` for Client Components (using browser cookies).
+- Added a Middleware to refresh the auth session on every request, ensuring cookies are kept up-to-date.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 2. Real-time Updates with RLS
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**Problem**: By default, Supabase Realtime might broadcast all changes or none if not configured correctly with Row Level Security (RLS). We needed users to only receive updates for _their_ bookmarks.
+**Solution**:
+
+- Enabled RLS on the `bookmarks` table.
+- Added the table to the `supabase_realtime` publication (`alter publication supabase_realtime add table bookmarks;`).
+- In the frontend `BookmarkList` component, subscribed to the channel. The Supabase client automatically handles passing the user's auth token, so the Realtime service respects the RLS policies (broadcasting only matching rows).
+
+### 3. Styling Consistency
+
+**Problem**: Quickly building a responsive UI without writing custom CSS.
+**Solution**: Leveraged Tailwind CSS utility classes. Used a simple layout with a header for user info/signout and a main content area for the form and list.
