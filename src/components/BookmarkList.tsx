@@ -3,8 +3,28 @@
 import { createClient } from '@/utils/supabase/client'
 import { useEffect, useMemo, useState } from 'react'
 import { Database } from '@/types/supabase'
+import { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 
 type Bookmark = Database['public']['Tables']['bookmarks']['Row']
+
+const updateBookmarks = (
+  prev: Bookmark[],
+  payload: RealtimePostgresChangesPayload<Bookmark>
+) => {
+  const { eventType, new: newRecord, old: oldRecord } = payload
+
+  if (eventType === 'INSERT') {
+    if (prev.some((b) => b.id === newRecord.id)) return prev
+    return [newRecord, ...prev]
+  }
+  if (eventType === 'DELETE') {
+    return prev.filter((b) => b.id !== oldRecord.id)
+  }
+  if (eventType === 'UPDATE') {
+    return prev.map((b) => (b.id === newRecord.id ? newRecord : b))
+  }
+  return prev
+}
 
 export default function BookmarkList() {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([])
@@ -28,6 +48,10 @@ export default function BookmarkList() {
 
     fetchBookmarks()
 
+    const handleRealtimePayload = (payload: RealtimePostgresChangesPayload<Bookmark>) => {
+      setBookmarks((prev) => updateBookmarks(prev, payload))
+    }
+
     const channel = supabase
       .channel('realtime bookmarks')
       .on(
@@ -37,22 +61,7 @@ export default function BookmarkList() {
           schema: 'public',
           table: 'bookmarks',
         },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setBookmarks((prev) => {
-              if (prev.some((b) => b.id === payload.new.id)) return prev
-              return [payload.new as Bookmark, ...prev]
-            })
-          } else if (payload.eventType === 'DELETE') {
-            setBookmarks((prev) => prev.filter((bookmark) => bookmark.id !== payload.old.id))
-          } else if (payload.eventType === 'UPDATE') {
-            setBookmarks((prev) =>
-              prev.map((bookmark) =>
-                bookmark.id === payload.new.id ? (payload.new as Bookmark) : bookmark
-              )
-            )
-          }
-        }
+        handleRealtimePayload
       )
       .subscribe()
 
@@ -60,10 +69,10 @@ export default function BookmarkList() {
       fetchBookmarks()
     }
 
-    window.addEventListener('bookmarks:refresh', handleBookmarksRefresh)
+    globalThis.addEventListener('bookmarks:refresh', handleBookmarksRefresh)
 
     return () => {
-      window.removeEventListener('bookmarks:refresh', handleBookmarksRefresh)
+      globalThis.removeEventListener('bookmarks:refresh', handleBookmarksRefresh)
       supabase.removeChannel(channel)
     }
   }, [supabase])
@@ -83,9 +92,9 @@ export default function BookmarkList() {
   if (loading) {
     return (
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {Array.from({ length: 3 }).map((_, idx) => (
+        {[1, 2, 3].map((id) => (
           <div
-            key={idx}
+            key={id}
             className="h-36 animate-pulse rounded-2xl border border-[rgba(23,32,45,0.08)] bg-white/70"
           />
         ))}

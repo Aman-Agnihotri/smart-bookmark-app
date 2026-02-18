@@ -1,7 +1,7 @@
 'use client'
 
 import { createClient } from '@/utils/supabase/client'
-import { useMemo, useState } from 'react'
+import { FormEvent, useMemo, useState } from 'react'
 
 export default function AddBookmarkForm() {
   const [title, setTitle] = useState('')
@@ -9,7 +9,7 @@ export default function AddBookmarkForm() {
   const [loading, setLoading] = useState(false)
   const supabase = useMemo(() => createClient(), [])
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     if (!title || !url) return
 
@@ -18,7 +18,7 @@ export default function AddBookmarkForm() {
       const { error } = await supabase.from('bookmarks').insert([{ title, url }])
       if (error) throw error
 
-      window.dispatchEvent(new Event('bookmarks:refresh'))
+      globalThis.dispatchEvent(new Event('bookmarks:refresh'))
 
       setTitle('')
       setUrl('')
@@ -42,8 +42,9 @@ export default function AddBookmarkForm() {
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="md:col-span-1">
-          <label className="mb-1.5 block text-sm font-medium text-[#3f4955]">Title</label>
+          <label htmlFor="title" className="mb-1.5 block text-sm font-medium text-[#3f4955]">Title</label>
           <input
+            id="title"
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -54,8 +55,9 @@ export default function AddBookmarkForm() {
         </div>
 
         <div className="md:col-span-1">
-          <label className="mb-1.5 block text-sm font-medium text-[#3f4955]">URL</label>
+          <label htmlFor="url" className="mb-1.5 block text-sm font-medium text-[#3f4955]">URL</label>
           <input
+            id="url"
             type="url"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
