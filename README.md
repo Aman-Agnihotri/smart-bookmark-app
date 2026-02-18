@@ -11,7 +11,7 @@ A simple bookmark manager built with Next.js (App Router), Supabase, and Tailwin
 
 ## Tech Stack
 
-- **Framework**: Next.js 15 (App Router)
+- **Framework**: Next.js 16 (App Router)
 - **Language**: TypeScript
 - **Backend/Database**: Supabase (PostgreSQL, Auth, Realtime)
 - **Styling**: Tailwind CSS
@@ -84,7 +84,7 @@ This project is ready to be deployed on Vercel.
 - Added the table to the `supabase_realtime` publication (`alter publication supabase_realtime add table bookmarks;`).
 - In the frontend `BookmarkList` component, subscribed to the channel. The Supabase client automatically handles passing the user's auth token, so the Realtime service respects the RLS policies (broadcasting only matching rows).
 
-### 3. Styling Consistency
+### 3. Handling Duplicate Updates
 
-**Problem**: Quickly building a responsive UI without writing custom CSS.
-**Solution**: Leveraged Tailwind CSS utility classes. Used a simple layout with a header for user info/signout and a main content area for the form and list.
+**Problem**: When a user adds a bookmark, the app fetches the updated list immediately. At the same time, the Realtime subscription receives an `INSERT` event. This race condition caused the new bookmark to appear twice in the list (once from the fetch, once from the Realtime event).
+**Solution**: Modified the Realtime `INSERT` handler in `BookmarkList.tsx` to check if the incoming bookmark ID already exists in the state before adding it. This ensures that even if both updates arrive, the UI remains consistent without duplicates.

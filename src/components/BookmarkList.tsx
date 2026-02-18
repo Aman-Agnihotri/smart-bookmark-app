@@ -39,7 +39,10 @@ export default function BookmarkList() {
         },
         (payload) => {
           if (payload.eventType === 'INSERT') {
-            setBookmarks((prev) => [payload.new as Bookmark, ...prev])
+            setBookmarks((prev) => {
+              if (prev.some((b) => b.id === payload.new.id)) return prev
+              return [payload.new as Bookmark, ...prev]
+            })
           } else if (payload.eventType === 'DELETE') {
             setBookmarks((prev) => prev.filter((bookmark) => bookmark.id !== payload.old.id))
           } else if (payload.eventType === 'UPDATE') {
